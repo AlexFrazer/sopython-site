@@ -1,0 +1,23 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<div class="page-lead">
+    <h1>Groups</h1>
+</div>
+<hr/>
+
+{% for group, members in users_by_group|dictsort %}
+<h3>{{ group }}</h3>
+    <div class="row">
+    {% set width = "2" %}
+    {% for user in members %}
+    <div class="col-xs-{{width}} col-sm-{{width}} col-md-{{width}} col-lg-{{width}} text-center">
+        <a href="{{ url_for('admin.edit_user_groups', user_id=user.id) }}">
+            <img src="{{ user.avatar_url|default('http://placehold.it/150x150&text=No Picture', True) }}" class="img-rounded user-avatar" alt="">
+            <p class="lead">{{ user.display_name }}</p>
+        </a>
+    </div>
+    {% endfor %}
+    </div>
+{% endfor %}
+{% endblock %}

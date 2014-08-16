@@ -29,7 +29,7 @@ def create_app(info=None):
 
     views.init_app(app)
 
-    from sopy import auth, tags, se_data, canon, salad, wiki, pages
+    from sopy import auth, tags, se_data, canon, salad, wiki, pages, admin
 
     app.register_blueprint(auth.bp, url_prefix='/auth')
     app.register_blueprint(tags.bp, url_prefix='/tags')
@@ -38,6 +38,7 @@ def create_app(info=None):
     app.register_blueprint(salad.bp, url_prefix='/salad')
     app.register_blueprint(wiki.bp, url_prefix='/wiki')
     app.register_blueprint(pages.bp, url_prefix='/pages')
+    app.register_blueprint(admin.bp, url_prefix='/admin')
 
     from sopy.salad.models import Salad
 
@@ -45,6 +46,10 @@ def create_app(info=None):
     @template('index.html')
     def index():
         return {'wod': Salad.word_of_the_day()}
+
+    @app.errorhandler(401)
+    def unauthorized(e):
+        return render_template('errors/401.html'), 401
 
     @app.errorhandler(404)
     def page_not_found(e):
