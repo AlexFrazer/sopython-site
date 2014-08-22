@@ -1,20 +1,16 @@
-from wtforms import widgets
+from wtforms import ValidationError
 from flask.ext.wtf import Form
-from wtforms.fields import SelectMultipleField
+from wtforms.fields import StringField
+from wtforms.validators import Required
 
-from sopy.auth.models import Group
-
-
-class MultiCheckboxField(SelectMultipleField):
-    " make some checkboxes from a list "
-    def __init__(self, *args, **kwargs):
-        super(SelectMultipleField, self).__init__(*args, **kwargs)
-        self.choices = [(g.name, g.name) for g in Group.query.distinct()]
-
-    widget = widgets.ListWidget(prefix_label=False)
-    option_widget = widgets.CheckboxInput()
+from sopy.auth.models import User
 
 
-class EditGroupsForm(Form):
-    " a form to change the groups a user belongs to "
-    groups = MultiCheckboxField()
+class EditUserGroupsForm(Form):
+    """ a form to add a user to a group """
+    user_id = StringField('user id', validators=[Required()])
+
+    def validate_user_id(self, field):
+        """ check that the user ID exists in the db """
+        if User.query.get(field.data) is None:
+            raise ValidationError('No user with that ID exists')

@@ -3,6 +3,8 @@ body>footer {
     padding-top: 21px;
 }
 
-img.user-avatar {
-    width: 150px;
+.vbottom {
+    display: inline-block;
+    vertical-align: bottom;
+    float: none;
 }
