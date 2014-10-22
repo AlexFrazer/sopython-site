@@ -9,6 +9,7 @@ from pygments.formatters import get_formatter_by_name
 import re
 from pygments.lexers import get_lexer_by_name
 from pygments.util import ClassNotFound
+from werkzeug.routing import BuildError
 
 
 def template(path=None, **default_context):
@@ -164,3 +165,11 @@ def init_app(app):
 
 
 #TODO id_slug route processor accespts id/slug, ignores slug if not present
+def permalink(function):
+    def inner(*args, **kwargs):
+        endpoint, values = function(*args, **kwargs)
+        try:
+            return url_for(endpoint, **values)
+        except BuildError:
+            return
+    return inner
