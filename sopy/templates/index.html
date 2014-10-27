@@ -14,4 +14,8 @@
             <div class="panel-body">The word of the day is "<a href="{{ wod.highlight_url }}"><strong>{{ wod.term }}</strong></a>"!</div>
         </div>{% endif %}
     </div></div>
+
+    <div class="container">
+        <span class="glyphicon glyphicon-star"></span>&nbspRandom Starred Message: {{ random_starred() }}
+    </div>
 {% endblock %}

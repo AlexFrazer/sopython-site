@@ -26,10 +26,12 @@ def create_app(info=None):
     db.init_app(app)
 
     from sopy.ext import views
+    from sopy.chat import starboard
 
     views.init_app(app)
+    starboard.init_app(app)
 
-    from sopy import auth, tags, se_data, canon, salad, wiki, pages, admin
+    from sopy import auth, tags, se_data, canon, salad, wiki, pages, admin, chat
 
     app.register_blueprint(auth.bp, url_prefix='/auth')
     app.register_blueprint(tags.bp, url_prefix='/tags')
@@ -39,6 +41,7 @@ def create_app(info=None):
     app.register_blueprint(wiki.bp, url_prefix='/wiki')
     app.register_blueprint(pages.bp, url_prefix='/pages')
     app.register_blueprint(admin.bp, url_prefix='/admin')
+    app.register_blueprint(chat.bp, url_prefix='/chat')
 
     from sopy.ext.views import template
 
