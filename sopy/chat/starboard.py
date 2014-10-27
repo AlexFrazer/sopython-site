@@ -1,29 +1,35 @@
 import requests
-from xml.etree import ElementTree
 import xmltodict
+from lxml import etree
+from io import BytesIO
+from random import randint
+
 
 starboard_url = "http://chat.stackoverflow.com/feeds/rooms/starred/6"
 tag_prefix = "{http://www.w3.org/2005/Atom}"
 
-def get_all():
+
+def get_entry(index=0, random=False):
+    """ returns a starred entry """
+    d = as_dict()
+    if random:
+        return d[randint(0, len(d))]
+    return d[index]
+
+
+def as_dict():
     """ returns all the starred messages as a list of OrderedDicts """
     xml_iterator = _tree_iter()
-    board = [convert_xml_to_dict(e) for e in xml_iterator]
-    return board
+    entry_list = []
+    for element in xml_iterator:
+        entry_list.append(xmltodict.parse(etree.tostring(element, method="xml")))
+    return entry_list
 
 
 def _tree_iter():
     """ make an iterator for every starred message """
-    starboard_xml = requests.get(starboard_url).text
-    et = ElementTree.fromstring(starboard_xml)
+    xml = requests.get(starboard_url)
+    parser = etree.XMLParser(ns_clean=True)
+    tree = etree.parse(BytesIO(xml.content), parser)
     root_tag = "{0}{1}".format(tag_prefix, "entry")
-    return et.iter(root_tag)
-
-
-def convert_xml_to_dict(element):
-    """ takes an element in the etree from the starboard and converts it to list
-    :param element: a star element in the xml tree
-    """
-    xml_string = ElementTree.tostring(element, encoding='utf-8', method='xml')
-    todict = xmltodict.parse(xml_string)
-    return todict
+    return tree.iter(root_tag)
