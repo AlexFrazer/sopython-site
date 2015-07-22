@@ -1,49 +1,16 @@
-from collections import Mapping
-from functools import wraps
 from urllib.parse import urlparse, urljoin
-from flask import render_template, url_for, redirect, request
+from flask import url_for, redirect, request
 import hoep as h
+from inflection import parameterize
 from markupsafe import Markup
 from pygments import highlight
 from pygments.formatters import get_formatter_by_name
 import re
 from pygments.lexers import get_lexer_by_name
 from pygments.util import ClassNotFound
-from werkzeug.routing import BuildError
-
-
-def template(path=None, **default_context):
-    """Render a template if the decorated view returns a context dictionary.
-
-    If the returned context includes the key '_template', that value is used as the template path.
-
-    If the view does not return a dictionary, the return value will be passed through.
-
-    :param path: template to render
-    :param kwargs: default context to pass to template, can be overridden by view context
-    :return: view decorator
-    """
-    def decorator(func):
-        @wraps(func)
-        def inner(*args, **kwargs):
-            result = func(*args, **kwargs)
-
-            if not isinstance(result, Mapping):
-                return result
-
-            context = default_context.copy()
-            context.update(result)
-
-            template_path = context.pop('_template', path)
-
-            if template_path is None:
-                raise KeyError('No default template provided, and no template passed in context.')
-
-            return render_template(template_path, **context)
-
-        return inner
-
-    return decorator
+from werkzeug.routing import BaseConverter
+from werkzeug.urls import Href
+from sopy import __version__
 
 
 def redirect_for(endpoint, code=302, **values):
@@ -160,16 +127,75 @@ def markdown(text):
     return Markup(md.render(text))
 
 
+class IDSlugConverter(BaseConverter):
+    """Matches an int id and optional slug, separated by "/".
+
+    :param attr: name of field to slugify, or None for default of str(instance)
+    :param length: max length of slug when building url
+    """
+
+    regex = r'-?\d+(?:/[\w\-]*)?'
+
+    def __init__(self, map, attr=None, length=80):
+        self.attr = attr
+        self.length = int(length)
+
+        super(IDSlugConverter, self).__init__(map)
+
+    def to_python(self, value):
+        id, slug = (value.split('/') + [None])[:2]
+
+        return int(id)
+
+    def to_url(self, value):
+        raw = str(value) if self.attr is None else getattr(value, self.attr, '')
+        slug = parameterize(raw)[:self.length].rstrip('-')
+
+        return '{}/{}'.format(value.id, slug).rstrip('/')
+
+
+class WikiTitleConverter(BaseConverter):
+    """Matches words separated by spaces or underscores.
+
+    When parsing the url, underscores are converted to spaces.
+    When building the url, spaces are converted to underscores.
+    """
+
+    def to_python(self, value):
+        return value.replace('_', ' ')
+
+    def to_url(self, value):
+        return value.replace(' ', '_')
+
+
+def query_update(**kwargs):
+    """Update the query string with new values.
+
+    This is useful, for example, for updating the pagination for a search query.
+
+    :param kwargs: items to add to the query
+    :return: path with updated query
+    """
+
+    q = request.args.copy()
+
+    # can't use update since that appends values to the multi-dict instead of replacing
+    for key, value in kwargs.items():
+        q[key] = value
+
+    return Href(request.path)(q)
+
+
+def view_context():
+    return {
+        'query_update': query_update,
+        '__version__': __version__
+    }
+
+
 def init_app(app):
+    app.url_map.converters['id_slug'] = IDSlugConverter
+    app.url_map.converters['wiki_title'] = WikiTitleConverter
     app.add_template_filter(markdown)
-
-
-#TODO id_slug route processor accespts id/slug, ignores slug if not present
-def permalink(function):
-    def inner(*args, **kwargs):
-        endpoint, values = function(*args, **kwargs)
-        try:
-            return url_for(endpoint, **values)
-        except BuildError:
-            return
-    return inner
+    app.add_template_global(query_update)
+    app.context_processor(view_context)

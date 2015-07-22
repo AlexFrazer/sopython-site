@@ -1,11 +1,12 @@
 import os
-from flask import current_app
-from sopy.ext.views import template, redirect_for
+from flask import current_app, render_template
+from sopy.ext.views import redirect_for
 from sopy.pages import bp
 
 
 def iter_pages():
     """Get all available pages from the current app's templates."""
+
     # get all templates under 'pages/'
     names = (path[6:] for path in current_app.jinja_env.list_templates() if path.startswith('pages/'))
     # split the extension, check if it's allowed
@@ -18,9 +19,8 @@ def iter_pages():
 
 
 @bp.route('/')
-@template('pages/index.html')
 def index():
-    return {'names': sorted(iter_pages())}
+    return render_template('pages/index.html', names=sorted(iter_pages()))
 
 
 # name: context function
@@ -37,6 +37,7 @@ def register_context(name):
     :param name: page name
     :return: context function decorator
     """
+
     def decorator(func):
         page_contexts[name] = func
 
@@ -52,7 +53,6 @@ page_aliases = {
 
 
 @bp.route('/<name>')
-@template()
 def page(name):
     name = page_aliases.get(name, name)
 
@@ -60,7 +60,4 @@ def page(name):
     if name not in iter_pages():
         return redirect_for('pages.index')
 
-    context = {'_template': 'pages/{}.html'.format(name)}
-    context.update(page_contexts.get(name, lambda: {})())
-
-    return context
+    return render_template('pages/{}.html'.format(name), **page_contexts.get(name, lambda: {})())

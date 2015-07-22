@@ -3,10 +3,8 @@ from sqlalchemy.ext.associationproxy import association_proxy
 from sopy import db
 from sopy.auth.models import User
 from sopy.ext.models import IDModel
-from sopy.ext.views import permalink
 from sopy.se_data.models import SEQuestion
 from sopy.tags.models import HasTags
-from slugify import slugify
 
 
 class CanonItem(HasTags, IDModel):
@@ -27,12 +25,7 @@ class CanonItem(HasTags, IDModel):
 
     @property
     def detail_url(self):
-        slug = slugify(self.title.lower(), separator='_')
-        return url_for('canon.detail', id=self.id, slug=slug)
-
-    # @property
-    # def detail_url(self):
-        # return url_for('canon.detail', id=self.id)
+        return url_for('canon.detail', id=self)
 
     @property
     def update_url(self):

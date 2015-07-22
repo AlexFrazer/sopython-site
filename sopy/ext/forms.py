@@ -1,6 +1,17 @@
 import re
-from wtforms import Field
+from flask import request
+from wtforms import Field, Form as BaseForm, IntegerField, StringField
 from wtforms.widgets import TextInput
+
+
+class StripStringField(StringField):
+    """String field that strips whitespace before validating."""
+
+    def process_formdata(self, valuelist):
+        self.data = valuelist[0].strip() if valuelist else ''
+
+        if not self.data:
+            self.raw_data = []
 
 
 class SeparatedField(Field):
@@ -41,11 +52,14 @@ class SeparatedField(Field):
             self.data = self.collection(self.getter(x) for x in value)
 
     def process_formdata(self, valuelist):
-        if not valuelist or not valuelist[0]:
+        raw = valuelist[0].strip() if valuelist else ''
+
+        if not raw:
             self.data = self.collection()
+            self.raw_data = []
             return
 
-        items = self.pattern.split(valuelist[0])
+        items = self.pattern.split(raw)
 
         if not items:
             self.data = self.collection()
@@ -59,3 +73,31 @@ class SeparatedField(Field):
             self.data = sorted(data, key=self.sort)
         else:
             self.data = data
+
+
+class PaginationForm(BaseForm):
+    page = IntegerField(default=1)
+    per_page = IntegerField(default=20)
+
+    def __init__(self, formdata=None, *args, **kwargs):
+        if formdata is None:
+            formdata = request.args
+
+        super(PaginationForm, self).__init__(formdata, *args, **kwargs)
+
+    def validate_page(self, field):
+        if field.data < 0:
+            field.data = 0
+
+    def validate_per_page(self, field):
+        if field.data < 1 or field.data > 100:
+            field.data = 20
+
+    def apply(self, query):
+        self.validate()
+
+        return query.paginate(self.page.data, self.per_page.data)
+
+    @classmethod
+    def auto(cls, query):
+        return cls().apply(query)

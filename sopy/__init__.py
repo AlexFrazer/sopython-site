@@ -1,10 +1,11 @@
 from flask import Flask
 from flask import render_template
-from flask.cli import with_appcontext
 from flask_alembic import Alembic
 from flask_alembic.cli.click import cli as alembic_cli
 from flask_babel import Babel
 from sopy.ext.sqlalchemy import SQLAlchemy
+
+__version__ = '1.4.8'
 
 alembic = Alembic()
 babel = Babel()
@@ -29,7 +30,7 @@ def create_app(info=None):
 
     views.init_app(app)
 
-    from sopy import auth, tags, se_data, canon, salad, wiki, pages, admin
+    from sopy import auth, tags, se_data, canon, salad, wiki, pages, admin, transcript
 
     app.register_blueprint(auth.bp, url_prefix='/auth')
     app.register_blueprint(tags.bp, url_prefix='/tags')
@@ -39,15 +40,16 @@ def create_app(info=None):
     app.register_blueprint(wiki.bp, url_prefix='/wiki')
     app.register_blueprint(pages.bp, url_prefix='/pages')
     app.register_blueprint(admin.bp, url_prefix='/admin')
-
-    from sopy.ext.views import template
+    app.register_blueprint(transcript.bp, url_prefix='/transcript')
 
     @app.route('/')
-    @template('index.html')
     def index():
         from sopy.salad.models import Salad
 
-        return {'wod': Salad.word_of_the_day()}
+        return render_template('index.html', wod=Salad.word_of_the_day())
+
+    app.add_url_rule('/favicon.ico', None, app.send_static_file, defaults={'filename': 'favicon.ico'})
+    app.add_url_rule('/robots.txt', None, app.send_static_file, defaults={'filename': 'robots.txt'})
 
     @app.errorhandler(403)
     def forbidden(e):

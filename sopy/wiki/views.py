@@ -1,15 +1,14 @@
-from flask import redirect
+from flask import redirect, render_template
 from flask_wtf import Form
 from sopy import db
 from sopy.auth.login import group_required, current_user, login_required, require_group, has_group
-from sopy.ext.views import template, redirect_for
+from sopy.ext.views import redirect_for
 from sopy.wiki import bp
 from sopy.wiki.forms import WikiPageForm, WikiPageEditorForm
 from sopy.wiki.models import WikiPage
 
 
 @bp.route('/')
-@template('wiki/index.html')
 def index():
     pages = WikiPage.query.order_by(WikiPage.title)
 
@@ -18,25 +17,23 @@ def index():
 
     pages = pages.all()
 
-    return {'pages': pages}
+    return render_template('wiki/index.html', pages=pages)
 
 
-@bp.route('/<int:id>/')
-@template('wiki/detail.html')
-def detail(id):
-    page = WikiPage.query.get_or_404(id)
+@bp.route('/<wiki_title:title>/')
+def detail(title):
+    page = WikiPage.query.filter(WikiPage.title == title).first_or_404()
 
-    return {'page': page}
+    return render_template('wiki/detail.html', page=page)
 
 
 @bp.route('/create', endpoint='create', methods=['GET', 'POST'])
-@bp.route('/<int:id>/update', methods=['GET', 'POST'])
-@template('wiki/update.html')
+@bp.route('/<wiki_title:title>/update', methods=['GET', 'POST'])
 @login_required
-def update(id=None):
-    page = WikiPage.query.get_or_404(id) if id is not None else None
+def update(title=None):
+    page = WikiPage.query.filter(WikiPage.title == title).first_or_404() if title is not None else None
 
-    if not (page is None or page.draft or page.community):
+    if current_user.reputation < 100 or not (page is None or page.draft or page.community):
         require_group('editor')
 
     form = WikiPageEditorForm(obj=page) if has_group('editor') else WikiPageForm(obj=page)
@@ -46,21 +43,20 @@ def update(id=None):
             page = WikiPage()
             db.session.add(page)
 
-        form.populate_obj(page)
         page.author = current_user
+        form.populate_obj(page)
         db.session.commit()
 
         return redirect(page.detail_url)
 
-    return {'page': page, 'form': form}
+    return render_template('wiki/update.html', page=page, form=form)
 
 
 
-@bp.route('/<int:id>/delete', methods=['GET', 'POST'])
-@template('wiki/delete.html')
+@bp.route('/<wiki_title:title>/delete', methods=['GET', 'POST'])
 @group_required('editor')
-def delete(id):
-    page = WikiPage.query.get_or_404(id)
+def delete(title):
+    page = WikiPage.query.filter(WikiPage.title == title).first_or_404()
     form = Form()
 
     if form.validate_on_submit():
@@ -69,4 +65,4 @@ def delete(id):
 
         return redirect_for('wiki.index')
 
-    return {'page': page, 'form': form}
+    return render_template('wiki/delete.html', page=page, form=form)
