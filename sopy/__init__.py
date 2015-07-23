@@ -45,8 +45,12 @@ def create_app(info=None):
     @app.route('/')
     def index():
         from sopy.salad.models import Salad
+        from sopy.se_data.models import ChatMessage
 
-        return render_template('index.html', wod=Salad.word_of_the_day())
+        # added this for some aesthetic appeal
+        # shows all registered users who are also in the chat room
+        active_users = ChatMessage.get_active_users()
+        return render_template('index.html', wod=Salad.word_of_the_day(), users=active_users)
 
     app.add_url_rule('/favicon.ico', None, app.send_static_file, defaults={'filename': 'favicon.ico'})
     app.add_url_rule('/robots.txt', None, app.send_static_file, defaults={'filename': 'robots.txt'})

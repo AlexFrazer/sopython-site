@@ -5,6 +5,7 @@ import requests
 from sopy import db
 from sopy.ext.models import ExternalIDModel
 from sopy.se_data.models import SEUser
+from bs4 import BeautifulSoup
 
 full_text_url = 'http://chat.stackoverflow.com/messages/{}/{}'
 id_re = re.compile(r'message-([\d]+)')
@@ -22,6 +23,18 @@ class ChatMessage(ExternalIDModel):
     stars = db.Column(db.Integer, nullable=False, default=0)
 
     user = db.relationship(SEUser, backref='chat_messages')
+
+    # this almost certainly does not belong here
+    @classmethod
+    def get_active_users(cls):
+        """ returns the active users in the chat room currently """
+        room_url = 'http://chat.stackoverflow.com/rooms/info/6/python?id=6&tab=general&users=current'
+        req = requests.get(room_url)
+        soup = BeautifulSoup(req.text)
+        # credit to poke for this one
+        cards = [card.get('id')[5:] for card in soup.find(id='room-usercards-container').find_all(class_='usercard')]
+        # gets a list of all active users
+        return SEUser.query.filter(SEUser.id.in_(cards)).all()
 
     @classmethod
     def html_load(cls, element, room_id, ts_date=None, update=True):
@@ -113,3 +126,5 @@ class ChatMessage(ExternalIDModel):
         o.stars = int(stars_elem.find('span', class_='times').string or 0) if stars_elem is not None else 0
 
         return o
+
+
