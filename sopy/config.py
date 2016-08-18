@@ -1,7 +1,9 @@
 DEBUG = True
 SECRET_KEY = 'dev'
+SERVER_NAME = 'localhost:5000'
 
 SQLALCHEMY_DATABASE_URI = 'postgresql:///sopy'
+SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 ALEMBIC_CONTEXT = {
     'compare_type': True,

@@ -1,6 +1,6 @@
 import re
 from flask import request
-from wtforms import Field, Form as BaseForm, IntegerField, StringField
+from wtforms import Field, Form as BaseForm, IntegerField, StringField, TextAreaField
 from wtforms.widgets import TextInput
 
 
@@ -12,6 +12,10 @@ class StripStringField(StringField):
 
         if not self.data:
             self.raw_data = []
+
+
+class StripTextAreaField(StripStringField, TextAreaField):
+    pass
 
 
 class SeparatedField(Field):
@@ -77,7 +81,7 @@ class SeparatedField(Field):
 
 class PaginationForm(BaseForm):
     page = IntegerField(default=1)
-    per_page = IntegerField(default=20)
+    per_page = IntegerField(default=100)
 
     def __init__(self, formdata=None, *args, **kwargs):
         if formdata is None:
@@ -91,7 +95,7 @@ class PaginationForm(BaseForm):
 
     def validate_per_page(self, field):
         if field.data < 1 or field.data > 100:
-            field.data = 20
+            field.data = 100
 
     def apply(self, query):
         self.validate()

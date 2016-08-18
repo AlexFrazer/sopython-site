@@ -3,43 +3,17 @@
 {% block full_title %}sopython{% endblock %}
 
 {% block content %}
-  <div class="section no-pad-bot">
-    <div class="container">
-      <br/><br/>
-      <h1 class="header center">
-        Cabbage, World!
-      </h1>
-      <div class="row center">
-        <p class="flow-text">Welcome to <strong>so</strong>python, the website of the Python community on <a href="http://stackoverflow.com/">Stack Overflow</a>.</p>
-        <p class="flow-text">Join us for chat in the <a href="http://chat.stackoverflow.com/rooms/6/python">Python room</a>!</p>
-      </div>
-      <div class="row center">
-        <h5>In chat</h5>
-        <div class="row">
-          <ul id="userlist">
-          {% for user in users %}
-          <li class="col s2" style="opacity: 0.0;">
-            <img class="invisible circle responsive-img" src="{{ user.profile_image }}"/>
-          </li>
-          {% endfor %}
+    <div class="row"><div class="col-md-12">
+        <div class="jumbotron">
+            <h2>print('Hello, World!')</h2>
+            <p>Welcome to <strong>so</strong>python, the website of the Python community on <a href="http://stackoverflow.com/">Stack Overflow</a>.</p>
+            <p>Join us for chat in the <a href="http://chat.stackoverflow.com/rooms/6/python">Python room</a>!</p>
         </div>
-        </ul>
-      </div>
-      <div class="row center">
-        {% if wod %}
-          <div class="card-panel">
-            <span class="orange-text">
-              The word of the day is "<a href="{{ wod.highlight_url }}"><strong>{{ wod.term }}</strong></a>"!
-            </span>
-          </div>
-        {% endif %}
-      </div>
-    </div>
-  </div>
-{% endblock %}
-
-{% block scripts %}
-<script type="text/javascript">
-  Materialize.showStaggeredList('#userlist')
-</script>
+        <div class="panel panel-info">
+            <div class="panel-heading">PyCon US 2016</div>
+            <div class="panel-body"><p><a href="{{ url_for('pycon2016') }}">We're at PyCon!</a>
+                David Lord (@davidism) is planning open spaces and meetups.
+                Ping @davidism in chat for more information.</p></div>
+        </div>
+    </div></div>
 {% endblock %}

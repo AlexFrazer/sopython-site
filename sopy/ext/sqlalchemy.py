@@ -1,6 +1,6 @@
 from flask import current_app, g
 from flask_sqlalchemy import SQLAlchemy as BaseSQLAlchemy, _camelcase_re, _QueryProperty, BaseQuery
-from sqlalchemy import inspect
+from sqlalchemy import inspect, MetaData
 from sqlalchemy.ext.declarative import DeclarativeMeta as BaseDeclarativeMeta, declared_attr, declarative_base
 from sqlalchemy.orm import was_deleted
 
@@ -39,6 +39,13 @@ class UniqueMixin:
     """Keep a cache of unique instances in memory so new instances can be safely created in bulk before they are committed."""
 
     @classmethod
+    def create_unique(cls, session, **kwargs):
+        o = cls(**kwargs)
+        session.add(o)
+        return o
+
+
+    @classmethod
     def get_unique(cls, **kwargs):
         g._unique_cache = cache = getattr(g, '_unique_cache', {})
         key = (cls, tuple(kwargs.items()))
@@ -54,8 +61,7 @@ class UniqueMixin:
                 o = session.query(cls).filter_by(**kwargs).first()
 
             if o is None:
-                o = cls(**kwargs)
-                session.add(o)
+                o = cls.create_unique(session, **kwargs)
 
             cache[key] = o
 
@@ -108,8 +114,15 @@ class SQLAlchemy(BaseSQLAlchemy):
         super(SQLAlchemy, self).init_app(app)
         app.shell_context_processor(lambda: {'db': self})
 
-    def make_declarative_base(self):
-        base = declarative_base(cls=self.BaseModel, name='Model', metaclass=self.DeclarativeMeta)
+    def make_declarative_base(self, metadata=None):
+        metadata = MetaData(naming_convention={
+            'pk': 'pk_%(table_name)s',
+            'fk': 'fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s',
+            'uq': 'uq_%(table_name)s_%(column_0_name)s',
+            'ix': 'ix_%(table_name)s_%(column_0_name)s',
+            'ck': 'ck_%(table_name)s_%(constraint_name)s',
+        })
+        base = declarative_base(metadata=metadata, cls=self.BaseModel, name='Model', metaclass=self.DeclarativeMeta)
         base.query = _QueryProperty(self)
         base.db = self
         return base
